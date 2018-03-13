@@ -56,6 +56,7 @@ public:
 	uint32 bUsingMotionControllers : 1;
 
 	/** Fires a projectile. */
+	UFUNCTION(BlueprintCallable, Category = "Input")
 	void OnFire();
 	
 };
