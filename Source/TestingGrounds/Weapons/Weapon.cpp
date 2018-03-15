@@ -78,10 +78,14 @@ void AWeapon::OnFire() {
 	}
 
 	// try and play a firing animation if specified
-	if (FireAnimation != NULL) {
-		// Get the animation object for the arms mesh
-		if (AnimInstance != NULL) {
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
-		}
+	if (FireAnimation1P != NULL && AnimInstance1P != NULL) {
+
+		AnimInstance1P->Montage_Play(FireAnimation1P, 1.f);
+	}
+
+	// try and play a firing animation if specified
+	if (FireAnimationTP != NULL && AnimInstanceTP != NULL) {
+
+		AnimInstanceTP->Montage_Play(FireAnimationTP, 1.f);
 	}
 }
