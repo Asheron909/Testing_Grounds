@@ -24,9 +24,21 @@ void ATile::BeginPlay()
 	Super::BeginPlay();
 }
 
+
+void ATile::SetPool(UActorPool *InPool) {
+
+	//UE_LOG(LogTemp, Warning, TEXT("[%s] Setting Pool %s"), *(this->GetName()), *(InPool->GetName()));
+	Pool = InPool;
+
+	PositionNavMeshBoundsVolume();
+}
+
 void ATile::EndPlay(const EEndPlayReason::Type EEndPlayReason) {
 
-	Pool->Return(NavMeshBoundsVolume);
+	if (Pool != nullptr && NavMeshBoundsVolume != nullptr) {
+		Pool->Return(NavMeshBoundsVolume);
+	}
+	else { return; }
 }
 
 // Called every frame
@@ -49,7 +61,6 @@ void ATile::RandomlyPlaceActors(TSubclassOf<T> ToSpawn, int MinSpawn, int MaxSpa
 			SpawnPosition.Rotation = FMath::RandRange(-180.0f, 180.0f);
 			PlaceActor(ToSpawn, SpawnPosition);
 		}
-		//UE_LOG(LogTemp, Warning, TEXT("SpawnPoint: %s"), *SpawnPoint.ToCompactString());
 	}
 }
 
@@ -61,16 +72,8 @@ void ATile::PlaceActors(TSubclassOf<AActor> ToSpawn, int MinSpawn, int MaxSpawn,
 
 // Places the AI in the Level
 void ATile::PlaceAIPawns(TSubclassOf<APawn> ToSpawn, int MinSpawn, int MaxSpawn, float Radius) {
-
+		
 	RandomlyPlaceActors(ToSpawn, MinSpawn, MaxSpawn, Radius, 1, 1);
-}
-
-void ATile::SetPool(UActorPool *InPool) {
-
-	UE_LOG(LogTemp, Warning, TEXT("[%s] Setting Pool %s"), *(this->GetName()), *(InPool->GetName()));
-	Pool = InPool;
-
-	PositionNavMeshBoundsVolume();
 }
 
 void ATile::PositionNavMeshBoundsVolume() {
@@ -81,7 +84,7 @@ void ATile::PositionNavMeshBoundsVolume() {
 		UE_LOG(LogTemp, Error, TEXT("[%s] Not Enough Actors in pool."), *GetName());
 		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("[%s] Checked out: {%s}"), *GetName(), *NavMeshBoundsVolume->GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("[%s] Checked out: {%s}"), *GetName(), *NavMeshBoundsVolume->GetName());
 	NavMeshBoundsVolume->SetActorLocation(GetActorLocation() + NavigationBoundsOffset);
 	GetWorld()->GetNavigationSystem()->Build();
 }
@@ -89,7 +92,7 @@ void ATile::PositionNavMeshBoundsVolume() {
 bool ATile::FindEmptyLocation(FVector& OutLocation, float Radius) {
 
 	FBox Bounds(MinExtent, MaxExtent);
-	const int MAX_ATTEMPTS = 0;
+	const int MAX_ATTEMPTS = 50;
 
 	for (size_t i = 0; i < MAX_ATTEMPTS; i++) {
 
@@ -111,18 +114,19 @@ void ATile::PlaceActor(TSubclassOf<AActor> ToSpawn, const FSpawnPosition& SpawnP
 		SpawnedActor->SetActorRotation(FRotator(0, SpawnPosition.Rotation, 0));
 		SpawnedActor->SetActorScale3D(FVector(SpawnPosition.Scale));
 	}
+	else { return; }
 }
 
 void ATile::PlaceActor(TSubclassOf<APawn> ToSpawn, const FSpawnPosition& SpawnPosition) {
 
-	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(ToSpawn);
+	FRotator Rotation = FRotator(0, SpawnPosition.Rotation, 0);
+	APawn* SpawnedPawn = GetWorld()->SpawnActor<APawn>(ToSpawn, SpawnPosition.Location, Rotation);
 	if (SpawnedPawn) {
-		SpawnedPawn->SetActorRelativeLocation(SpawnPosition.Location);
 		SpawnedPawn->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::KeepRelative, false));
-		SpawnedPawn->SetActorRotation(FRotator(0, SpawnPosition.Rotation, 0));
 		SpawnedPawn->SpawnDefaultController();
 		SpawnedPawn->Tags.Add(FName("Enemy"));
 	}
+	else { return; }
 }
 
 bool ATile::CanSpawnAtLocation(FVector Location, float Radius) {
